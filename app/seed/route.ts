@@ -103,15 +103,24 @@ async function seedRevenue() {
 
 export async function GET() {
   try {
-    const result = await sql.begin((sql) => [
-      seedUsers(),
-      seedCustomers(),
-      seedInvoices(),
-      seedRevenue(),
-    ]);
+    // Begin transaction and seed all data
+    await sql.begin(async (sql) => {
+      await seedUsers();
+      await seedCustomers();
+      await seedInvoices();
+      await seedRevenue();
+    });
 
-    return Response.json({ message: 'Database seeded successfully' });
+    return new Response(JSON.stringify({ message: 'Database seeded successfully' }), { status: 200 });
   } catch (error) {
-    return Response.json({ error }, { status: 500 });
+    // TypeScript guard to check if error is an instance of Error
+    if (error instanceof Error) {
+      console.error("Seeding error:", error);
+      return new Response(JSON.stringify({ error: error.message || 'Seeding failed' }), { status: 500 });
+    } else {
+      // In case the error is not an instance of Error (e.g., a string or other object)
+      console.error("Unknown error:", error);
+      return new Response(JSON.stringify({ error: 'An unknown error occurred during seeding.' }), { status: 500 });
+    }
   }
 }
